@@ -40,6 +40,10 @@ class Loader:
             raise InvalidSchemaError(f"CSV parse error in: {path} -> {e}")
     
     def _validate_columns(self, df, required_cols, file_label):
+        unexpected = [col for col in df.columns if col.lower().startswith("unnamed")]
+        if unexpected:
+            print(f"Warning: unexpected columns detected: {unexpected}")
+        
         missing = []
         for column in required_cols:
             if column not in df.columns:

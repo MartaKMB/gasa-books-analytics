@@ -1,11 +1,10 @@
 from loader import Loader
 from cleaner import Cleaner
 from analyzer import SalesAnalyzer
-# import visualizer as viz
+import visualizer as viz
 import os
 
 # 1) Load
-print(os.getcwd())
 loader = Loader(data_dir="data")
 
 try:
@@ -24,4 +23,18 @@ kpis = analyzer.kpis()
 by_prod = analyzer.by_product()
 by_reg = analyzer.by_region()
 by_month = analyzer.by_month()
-by_month = analyzer.by_quarter()
+by_q = analyzer.by_quarter()
+
+# 4) Visualyze
+os.makedirs("reports/figures", exist_ok=True)
+
+out = viz.save_dashboard(
+    df_by_product=by_prod,
+    df_by_region=by_reg,
+    df_by_month=by_month,
+    df_by_quarter=by_q,
+    kpis=kpis,
+    n_top=5,
+    out_dir="reports/figures",
+    filename="dashboard.png"
+)

@@ -60,10 +60,11 @@ class SalesAnalyzer:
         return agg
     
     def by_month(self):
+        self.df["month"] = self.df["date"].dt.to_period("M").dt.to_timestamp()
         agg = (
-            self.df.groupby("date", as_index=False)
+            self.df.groupby("month", as_index=False)
                .agg(units_sum=("units", "sum"))
-               .sort_values("units_sum", ascending=False)
+               .sort_values("month")
         )
         return agg
     

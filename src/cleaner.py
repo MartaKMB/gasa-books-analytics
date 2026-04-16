@@ -21,13 +21,13 @@ class Cleaner:
     def clean_sales(self, df_sales):
         df = self._standarize_columns(df_sales)
 
-        df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.to_period("M")
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
         df["units"] = pd.to_numeric(df["units"], errors="coerce")
 
         df["units"] = df["units"].fillna(0)
         df = df[df["units"] >= 0]
         df = df[df["date"].notna()]
 
-        df.reset_index(drop=True)
+        df = df.reset_index(drop=True)
 
         return df

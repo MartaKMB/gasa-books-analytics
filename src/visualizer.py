@@ -9,7 +9,6 @@ def save_dashboard(
     df_by_product,
     df_by_region,
     df_by_month,
-    df_by_quarter,
     df_impact,
     df_seasonality,
     kpis: dict,
@@ -50,12 +49,6 @@ def save_dashboard(
     axs[0, 2].set_xlabel("country")
     axs[0, 2].set_ylabel("units")
     axs[0, 2].grid(axis="y", alpha=0.3)
-
-    # axs[1, 0].bar(df_by_quarter["quarter"], df_by_quarter["units_sum"])
-    # axs[1, 0].set_title("Sales seasonality per quarter")
-    # axs[1, 0].set_xlabel("quarter")
-    # axs[1, 0].set_ylabel("units")
-    # axs[1, 0].grid(axis="y", alpha=0.3)
 
     axs[1, 0].plot(df_by_month["month"], df_by_month["units_sum"], marker="o")
     axs[1, 0].set_title("Sales by month")

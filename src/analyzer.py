@@ -83,27 +83,17 @@ class SalesAnalyzer:
         )
         return agg
     
-    def by_quarter(self):
-        # sales seasonality
-        self.df["quarter"] = self.df["month"].dt.quarter
-
-        agg = (
-            self.df.groupby("quarter", as_index=False)
-            .agg(units_sum=("units", "sum"))
-            .sort_values("units_sum", ascending=False)
-        )
-        return agg
-    
     def amazon_vs_jdg(self):
         agg = (
             self.df.groupby("status", as_index=False)
             .agg(units_sum=("units", "sum"))
             .sort_values("units_sum", ascending=False)
         )
-        print(agg)
         return agg
     
     def seasonality_check(self):
+        self.df["quarter"] = self.df["month"].dt.quarter
+
         agg = (
             self.df.groupby(["jdg", "quarter"], as_index=False)
             .agg(avg_units=("units", "mean"))

@@ -25,10 +25,8 @@ kpis = analyzer.kpis()
 by_prod = analyzer.by_product()
 by_reg = analyzer.by_region()
 by_month = analyzer.by_month()
-by_q = analyzer.by_quarter()
 check_impact = analyzer.amazon_vs_jdg()
 seasonality = analyzer.seasonality_check()
-print("seasonality check:\n", seasonality)
 
 # 4) Visualyze
 os.makedirs("reports/figures", exist_ok=True)
@@ -37,7 +35,6 @@ out = viz.save_dashboard(
     df_by_product=by_prod,
     df_by_region=by_reg,
     df_by_month=by_month,
-    df_by_quarter=by_q,
     df_impact=check_impact,
     df_seasonality=seasonality,
     kpis=kpis,

@@ -34,7 +34,7 @@ out = viz.save_dashboard(
     df_by_month=by_month,
     df_by_quarter=by_q,
     kpis=kpis,
-    n_top=5,
+    n_top=3,
     out_dir="reports/figures",
     filename="dashboard.png"
 )

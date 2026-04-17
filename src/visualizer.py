@@ -9,14 +9,14 @@ def save_dashboard(
     df_by_product,
     df_by_region,
     df_by_month,
-    df_impact,
+    df_own_impact,
     df_seasonality,
     kpis: dict,
     n_top: int = 3,
     out_dir: str = "reports/figures",
     filename: str = "dashboard.png"
 ):
-    top = df_by_product.nlargest(n_top, "units_sum").copy()
+    top = df_by_product.nlargest(n_top, "total_units").copy()
 
     fig, axs = plt.subplots(2, 3, figsize=(12,7))
 
@@ -38,19 +38,19 @@ def save_dashboard(
         fontsize=11, family="Monospace"
     )
 
-    axs[0, 1].bar(top["shorttitle"], top["units_sum"])
+    axs[0, 1].bar(top["book"], top["total_units"])
     axs[0, 1].set_title(f"Top {n_top} sold books")
     axs[0, 1].set_ylabel("units")
     axs[0, 1].tick_params(axis="x")
     axs[0, 1].grid(axis="y", alpha=0.3)
 
-    axs[0, 2].bar(df_by_region["region"], df_by_region["units_sum"])
+    axs[0, 2].bar(df_by_region["region"], df_by_region["total_units"])
     axs[0, 2].set_title("Sales by region")
     axs[0, 2].set_xlabel("country")
     axs[0, 2].set_ylabel("units")
     axs[0, 2].grid(axis="y", alpha=0.3)
 
-    axs[1, 0].plot(df_by_month["month"], df_by_month["units_sum"], marker="o")
+    axs[1, 0].plot(df_by_month["month"], df_by_month["total_units"], marker="o")
     axs[1, 0].set_title("Sales by month")
     axs[1, 0].set_xlabel("month")
     axs[1, 0].set_ylabel("units")
@@ -58,15 +58,15 @@ def save_dashboard(
     axs[1, 0].grid(axis="y", alpha=0.3)
 
     axs[1, 1].bar(
-        df_seasonality[df_seasonality["jdg"] == 1]["quarter"] - 0.15,
-        df_seasonality[df_seasonality["jdg"] == 1]["avg_units"],
+        df_seasonality[df_seasonality["own_channel_active"] == 1]["quarter"] - 0.15,
+        df_seasonality[df_seasonality["own_channel_active"] == 1]["avg_units"],
         width=0.3,
         label="active"
     )
 
     axs[1, 1].bar(
-        df_seasonality[df_seasonality["jdg"] == 0]["quarter"] + 0.15,
-        df_seasonality[df_seasonality["jdg"] == 0]["avg_units"],
+        df_seasonality[df_seasonality["own_channel_active"] == 0]["quarter"] + 0.15,
+        df_seasonality[df_seasonality["own_channel_active"] == 0]["avg_units"],
         width=0.3,
         label="suspended"
     )
@@ -77,7 +77,7 @@ def save_dashboard(
     axs[1, 1].legend()
     axs[1, 1].grid(axis="y", alpha=0.3)
 
-    axs[1, 2].bar(df_impact["status"], df_impact["units_sum"])
+    axs[1, 2].bar(df_own_impact["channel_status"], df_own_impact["total_units"])
     axs[1, 2].set_title("Own channel status vs sales on Amazon")
     axs[1, 2].set_xlabel("JDG status")
     axs[1, 2].set_ylabel("units")

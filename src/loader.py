@@ -3,6 +3,7 @@ A loader class that loads CSV files with rebust error handling and basic validat
 
 Expected input file(CSV):
 - amazon_sales.csv  [columns: Date, Title, ASIN, Marketplace, Units]
+- own_channel_activity.csv  [columns: Miesiac, JDG]
 """
 
 import os

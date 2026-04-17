@@ -6,7 +6,7 @@ class SalesAnalyzer:
     def __init__(self, df_sales):
         self.df = df_sales.copy() # defensive copy
         
-        required = ["month", "title", "asin", "marketplace", "units", "jdg"]
+        required = ["month", "title", "asin", "marketplace", "units", "own_channel_active"]
         missing = []
         for c in required:
             if c not in self.df.columns:
@@ -17,17 +17,17 @@ class SalesAnalyzer:
         
         self.df = self.df[self.df["month"].notna()]
 
-        self._add_shorttitle()
+        self._add_book_label()
         self._add_region()
         self._add_status()
 
-    def _add_shorttitle(self):
+    def _add_book_label(self):
         asin_map = {
             8394291341: "dla psów",
             8394291333: "dla kotów",
             8394291368: "for dogs"
         }
-        self.df["shorttitle"] = self.df["asin"].map(asin_map)
+        self.df["book"] = self.df["asin"].map(asin_map)
     
     def _add_region(self):
         self.df["region"] = (
@@ -42,11 +42,11 @@ class SalesAnalyzer:
             0: "suspended",
             1: "active"
         }
-        self.df["status"] = self.df["jdg"].map(status_map)
+        self.df["channel_status"] = self.df["own_channel_active"].map(status_map)
     
     def _status_impact(self):
-        active = self.df[self.df["jdg"] == 1]["units"].mean()
-        suspended = self.df[self.df["jdg"] == 0]["units"].mean()
+        active = self.df[self.df["own_channel_active"] == 1]["units"].mean()
+        suspended = self.df[self.df["own_channel_active"] == 0]["units"].mean()
         uplift = (suspended - active) / active
         return uplift
     
@@ -60,17 +60,17 @@ class SalesAnalyzer:
 
     def by_product(self):
         agg = (
-            self.df.groupby("shorttitle", as_index=False)
-               .agg(units_sum=("units", "sum"))
-               .sort_values("units_sum", ascending=False)
+            self.df.groupby("book", as_index=False)
+               .agg(total_units=("units", "sum"))
+               .sort_values("total_units", ascending=False)
         )
         return agg
     
     def by_region(self):
         agg = (
             self.df.groupby("region", as_index=False)
-               .agg(units_sum=("units", "sum"))
-               .sort_values("units_sum", ascending=False)
+               .agg(total_units=("units", "sum"))
+               .sort_values("total_units", ascending=False)
         )
         return agg
     
@@ -78,16 +78,16 @@ class SalesAnalyzer:
         self.df["month"] = self.df["month"].dt.to_period("M").dt.to_timestamp()
         agg = (
             self.df.groupby("month", as_index=False)
-               .agg(units_sum=("units", "sum"))
+               .agg(total_units=("units", "sum"))
                .sort_values("month")
         )
         return agg
     
     def amazon_vs_jdg(self):
         agg = (
-            self.df.groupby("status", as_index=False)
-            .agg(units_sum=("units", "sum"))
-            .sort_values("units_sum", ascending=False)
+            self.df.groupby("channel_status", as_index=False)
+            .agg(total_units=("units", "sum"))
+            .sort_values("total_units", ascending=False)
         )
         return agg
     
@@ -95,9 +95,9 @@ class SalesAnalyzer:
         self.df["quarter"] = self.df["month"].dt.quarter
 
         agg = (
-            self.df.groupby(["jdg", "quarter"], as_index=False)
+            self.df.groupby(["own_channel_active", "quarter"], as_index=False)
             .agg(avg_units=("units", "mean"))
-            .sort_values(["quarter", "jdg"])
+            .sort_values(["quarter", "own_channel_active"])
         )
         return agg
     

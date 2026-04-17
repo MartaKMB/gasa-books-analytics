@@ -36,7 +36,7 @@ class Cleaner:
         df = self._standarize_columns(df_jdg)
         df["month"] = pd.to_datetime(df["miesiac"], errors="coerce")
         
-        df["jdg"] = df["jdg"].isna().astype(int)
+        df["jdg"] = df["jdg"].fillna(0).astype(int)
         
         df = df[["month", "jdg"]]
         

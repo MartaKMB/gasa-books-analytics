@@ -17,8 +17,8 @@ def plot_kpis(ax, kpis: dict):
         f"Amazon active months: {kpis.get('amazon_active_months', 0)}",
         f"Amazon coverage: {kpis.get('amazon_coverage', 0):.2%}",
         "-----------",
-        f"Cannibalization impact:",
-        f"{kpis.get('cannibalization_impact')}"
+        f"Cannibalization impact: {kpis.get("cannibalization_pct"):.1%} ",
+        f"({kpis.get('cannibalization_impact')})"
     ]
 
     ax.text(

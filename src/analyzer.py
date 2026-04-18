@@ -156,15 +156,18 @@ class KPIAnalyzer:
         suspended_avg = grouped.get(0, 0)
 
         if active_avg == 0:
-            cannibalization_impact = "Insufficient data"
+            cannibalization_pct = 0
+            cannibalization_label = "Insufficient data"
         else:
-            ratio = suspended_avg / active_avg
+            cannibalization_pct = (suspended_avg - active_avg) / active_avg
 
-            cannibalization_impact = (
-                "No JDG impact on Amazon sales"
-                if ratio >= 1 else
-                "Possible cannibalization effect"
-            )
+            # 🔥 próg interpretacji
+            if abs(cannibalization_pct) < 0.10:
+                cannibalization_label = "No significant impact"
+            elif cannibalization_pct < 0:
+                cannibalization_label = "Sales drop when JDG suspended"
+            else:
+                cannibalization_label = "Sales increase when JDG suspended"
 
         # =========================
         # FINAL DICT
@@ -177,5 +180,6 @@ class KPIAnalyzer:
             "suspended_months": suspended_months,
             "amazon_active_months": amazon_active_months,
             "amazon_coverage": amazon_coverage,
-            "cannibalization_impact": cannibalization_impact
+            "cannibalization_impact": cannibalization_label,
+            "cannibalization_pct": cannibalization_pct
         }

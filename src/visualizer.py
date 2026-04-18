@@ -77,7 +77,7 @@ def plot_seasonality(ax, df_seasonality):
     )
 
     ax.set_xlabel("quarter")
-    ax.set_title("Amazon sales by quarter & channel status")
+    ax.set_title("Amazon sales by quarter & JDG status")
     ax.set_ylabel("avg units")
     ax.legend()
     ax.grid(axis="y", alpha=0.3)
@@ -86,7 +86,7 @@ def plot_seasonality(ax, df_seasonality):
 def plot_channel_impact(ax, df_own_impact):
     ax.bar(df_own_impact["channel_status"], df_own_impact["total_units"])
 
-    ax.set_title("Own channel status vs sales on Amazon")
+    ax.set_title("JDG status vs sales on Amazon")
     ax.set_xlabel("channel status")
     ax.set_ylabel("units")
     ax.grid(axis="y", alpha=0.3)

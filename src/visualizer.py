@@ -18,7 +18,9 @@ def plot_kpis(ax, kpis: dict):
         f"JDG active months: {kpis.get('active_months', 0)}",
         f"JDG suspended months: {kpis.get('suspended_months', 0)}",
         f"Amazon coverage: {kpis.get('amazon_coverage', 0):.2%}",
-        f"Amazon uplift when JDG inactive: {kpis.get('cannibalization_impact', 0):.2%}"
+
+        # FIXED KEY
+        f"Cannibalization impact: {kpis.get('cannibalization_impact', 0):.2%}"
     ]
 
     ax.text(
@@ -60,27 +62,25 @@ def plot_monthly(ax, df_by_month):
 
 # SEASONALITY
 def plot_seasonality(ax, df_seasonality):
-    active = df_seasonality[df_seasonality["own_channel_active"] == 1]
-    suspended = df_seasonality[df_seasonality["own_channel_active"] == 0]
+    """
+    FIX: seasonal view is now pure Amazon aggregation:
+    quarter -> avg_units (no JDG split anymore)
+    """
+
+    df = df_seasonality.copy()
+
+    # ensure correct order
+    df = df.sort_values("quarter")
 
     ax.bar(
-        active["quarter"] - 0.15,
-        active["avg_units"],
-        width=0.3,
-        label="active"
+        df["quarter"],
+        df["avg_units"]
     )
 
-    ax.bar(
-        suspended["quarter"] + 0.15,
-        suspended["avg_units"],
-        width=0.3,
-        label="suspended"
-    )
-
-    ax.set_xlabel("quarter")
-    ax.set_title("Amazon sales by quarter & JDG status")
-    ax.set_ylabel("avg units")
-    ax.legend()
+    ax.set_xticks([1, 2, 3, 4])
+    ax.set_xlabel("Quarter")
+    ax.set_title("Amazon sales seasonality (by quarter)")
+    ax.set_ylabel("Average units")
     ax.grid(axis="y", alpha=0.3)
 
 # CHANNEL IMPACT

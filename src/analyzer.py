@@ -44,14 +44,49 @@ class BaseAnalyzer:
 class KPIAnalyzer(BaseAnalyzer):
 
     def kpis(self):
+        cannibal = CannibalizationAnalyzer(self.df).impact_summary()
+
+        activity_stats = self.activity_split_from_df()
+
         return {
             "total_units": int(self.df["units"].sum()),
             "distinct_products": int(self.df["asin"].nunique()),
             "distinct_regions": int(self.df["region"].nunique()),
+
+            # FIX: real KPI from cannibalization
+            "cannibalization_impact": cannibal["difference"],
+
             "channel_substitution_effect": self._status_impact(),
             "channel_substitution_effect_normalized": self._status_impact_normalized(),
-            "amazon_coverage": self._amazon_coverage()
+
+            # FIXED coverage (no duplicates)
+            "amazon_coverage": self._amazon_coverage(),
+
+            **activity_stats
         }
+
+    def activity_split_from_df(self):
+        # FIX: derive from DF, not external DF
+        df = self.df.drop_duplicates("month")
+
+        return {
+            "active_months": int((df["own_channel_active"] == 1).sum()),
+            "suspended_months": int((df["own_channel_active"] == 0).sum()),
+            "total_months": int(df["month"].nunique())
+        }
+
+    def _amazon_coverage(self):
+        df = self.df.copy()
+
+        monthly = df.groupby("month", as_index=False).agg(units=("units", "sum"))
+
+        active_months = (monthly["units"] > 0).sum()
+        total_months = len(monthly)
+
+        if total_months == 0:
+            return 0.0
+
+        return float(active_months / total_months)
 
     def _status_impact(self):
         df = self.df.copy()
@@ -91,49 +126,6 @@ class KPIAnalyzer(BaseAnalyzer):
 
         return float((suspended - active) / active)
 
-    def activity_split(self, df_own_activity):
-        df = df_own_activity.copy()
-
-        counts = df["own_channel_active"].value_counts().to_dict()
-
-        return {
-            "active_months": int(counts.get(1, 0)),
-            "suspended_months": int(counts.get(0, 0)),
-            "total_months": int(len(df))
-        }
-
-    def _amazon_coverage(self):
-        df = self.df.copy()
-
-        monthly_sales = (
-            df.groupby("month", as_index=False)
-            .agg(units=("units", "sum"))
-        )
-
-        amazon_active_months = (monthly_sales["units"] > 0).sum()
-
-        total_months = len(self.df)
-
-        print(amazon_active_months, total_months)
-
-        if total_months == 0:
-            return 0.0
-
-        return float(amazon_active_months / total_months)
-
-    def raw_averages(self):
-        df = self.df.copy()
-
-        monthly = (
-            df.groupby(["month", "own_channel_active"], as_index=False)
-            .agg(units=("units", "sum"))
-        )
-
-        return (
-            monthly.groupby("own_channel_active")["units"]
-            .mean()
-            .to_dict()
-        )
 
 # AGGREGATIONS
 class AggregationAnalyzer(BaseAnalyzer):
@@ -153,57 +145,59 @@ class AggregationAnalyzer(BaseAnalyzer):
         )
 
     def by_month(self):
-        df = self.df.copy()
-
-        df["month"] = df["month"].dt.to_period("M").dt.to_timestamp()
-
+        return self._amazon_monthly().sort_values("month")
+    
+    def _amazon_monthly(self):
+            # FIX: remove JDG effect + duplicates
         return (
-            df.groupby("month", as_index=False)
-            .agg(total_units=("units", "sum"))
-            .sort_values("month")
-        )
+            self.df.groupby("month", as_index=False)
+                .agg(total_units=("units", "sum"))
+            )
 
     def seasonality(self):
-        df = self.df.copy()
-        df["quarter"] = df["month"].dt.quarter
+            """
+            FIX: pure Amazon seasonality (NO JDG influence)
+            """
 
-        monthly = (
-            df.groupby(["month", "own_channel_active", "quarter"], as_index=False)
-            .agg(units=("units", "sum"))
-        )
+            df = self._amazon_monthly()
 
-        return (
-            monthly.groupby(["own_channel_active", "quarter"], as_index=False)
-            .agg(avg_units=("units", "mean"))
-            .sort_values(["quarter", "own_channel_active"])
-        )
+            df["quarter"] = df["month"].dt.quarter
+
+            return (
+                df.groupby("quarter", as_index=False)
+                .agg(avg_units=("total_units", "mean"))
+                .sort_values("quarter")
+            )
 
 
 # CANNIBALIZATION / EFFECT ANALYSIS
 class CannibalizationAnalyzer(BaseAnalyzer):
+
+    def _amazon_start(self):
+        df = self.df.copy()
+        df = df[df["units"] > 0]
+        return df["month"].min()
+
+    def impact_summary(self):
+        df = self.df.copy()
+
+        start = self._amazon_start()
+
+        df = df[df["month"] >= start]
+
+        active = df[df["own_channel_active"] == 1]["units"].mean()
+        suspended = df[df["own_channel_active"] == 0]["units"].mean()
+
+        return {
+            "active_avg": float(active),
+            "suspended_avg": float(suspended),
+            "difference": float(suspended - active)
+        }
+
 
     def sales_by_channel_status(self):
         return (
             self.df.groupby("channel_status", as_index=False)
             .agg(total_units=("units", "sum"))
             .sort_values("total_units", ascending=False)
-        )
-
-    def impact_summary(self):
-        active = self.df[self.df["own_channel_active"] == 1]["units"]
-        suspended = self.df[self.df["own_channel_active"] == 0]["units"]
-
-        return {
-            "active_avg": float(active.mean()),
-            "suspended_avg": float(suspended.mean()),
-            "difference": float(suspended.mean() - active.mean())
-        }
-
-    def sales_when_active_only(self):
-        df = self.df[self.df["own_channel_active"] == 1]
-
-        return (
-            df.groupby("book", as_index=False)
-            .agg(avg_units=("units", "mean"))
-            .sort_values("avg_units", ascending=False)
         )

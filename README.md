@@ -104,7 +104,28 @@ Dashboard includes:
 - One product dominates total sales
 - Majority of sales comes from a single region
 - Sales fluctuate monthly with visible peaks
-- When own channel is **inactive**, Amazon sales are higher → possible cannibalization effect
+- Initial analysis suggested higher Amazon sales when the own channel was inactive. However, after  correcting for missing time periods and controlling for seasonality, this effect was no longer consistent.
+This indicates that the observed differences are likely driven by external factors (e.g. seasonality or growth trends) rather than direct cannibalization between channels.
+
+---
+
+## ⚠️ Analytical Caveats
+
+During development, a key issue was identified:
+
+- Early analysis excluded months with no Amazon sales
+- This introduced **survivorship bias**, significantly distorting results
+
+To address this:
+- A full monthly timeline was reconstructed using own-channel activity data
+- Missing sales were treated as zero (not missing)
+
+Additionally:
+- A normalized KPI was introduced to control for seasonality
+
+This highlights the importance of:
+- validating assumptions behind the data  
+- distinguishing correlation from causation  
 
 ---
 
@@ -119,6 +140,7 @@ python main.py
 ### 3. Check output
 reports/figures/dashboard.png
 
+---
 
 ## 💡 Design Decisions
 

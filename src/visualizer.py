@@ -15,7 +15,9 @@ def plot_kpis(ax, kpis: dict):
         f"Total units: {kpis.get('total_units', 0):,}",
         f"Products: {kpis.get('distinct_products', 0)}",
         f"Regions: {kpis.get('distinct_regions', 0)}",
-        f"JDG impact: {kpis.get('cannibalization_impact', 0):.2%}"
+        f"JDG active months: {kpis.get('active_months', 0)}",        # NEW
+        f"JDG suspended months: {kpis.get('suspended_months', 0)}",  # NEW
+        f"Amazon uplift when JDG inactive: {kpis.get('cannibalization_impact', 0):.2%}"
     ]
 
     ax.text(
@@ -75,7 +77,7 @@ def plot_seasonality(ax, df_seasonality):
     )
 
     ax.set_xlabel("quarter")
-    ax.set_title("Amazon sales by quarter & channel status")
+    ax.set_title("Amazon sales by quarter & JDG status")
     ax.set_ylabel("avg units")
     ax.legend()
     ax.grid(axis="y", alpha=0.3)
@@ -84,7 +86,7 @@ def plot_seasonality(ax, df_seasonality):
 def plot_channel_impact(ax, df_own_impact):
     ax.bar(df_own_impact["channel_status"], df_own_impact["total_units"])
 
-    ax.set_title("Own channel status vs sales on Amazon")
+    ax.set_title("JDG status vs sales on Amazon")
     ax.set_xlabel("channel status")
     ax.set_ylabel("units")
     ax.grid(axis="y", alpha=0.3)

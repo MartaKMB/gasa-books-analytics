@@ -6,6 +6,7 @@ from config.products import ASIN_TO_BOOK
 from config.status import STATUS_MAP
 from config.regions import MARKETPLACE_TO_REGION
 
+
 class BaseAnalyzer:
     def __init__(self, df):
         self.df = df.copy()
@@ -39,6 +40,7 @@ class BaseAnalyzer:
     def _add_status(self):
         self.df["channel_status"] = self.df["own_channel_active"].map(STATUS_MAP)
 
+# KPI ANALYZER
 class KPIAnalyzer(BaseAnalyzer):
 
     def kpis(self):
@@ -46,18 +48,74 @@ class KPIAnalyzer(BaseAnalyzer):
             "total_units": int(self.df["units"].sum()),
             "distinct_products": int(self.df["asin"].nunique()),
             "distinct_regions": int(self.df["region"].nunique()),
-            "cannibalization_impact": self._status_impact()
+            "channel_substitution_effect": self._status_impact(),
+            "channel_substitution_effect_normalized": self._status_impact_normalized()
         }
 
     def _status_impact(self):
-        active = self.df[self.df["own_channel_active"] == 1]["units"].mean()
-        suspended = self.df[self.df["own_channel_active"] == 0]["units"].mean()
+        df = self.df.copy()
+
+        monthly = (
+            df.groupby(["month", "own_channel_active"], as_index=False)
+            .agg(units=("units", "sum"))
+        )
+
+        active = monthly[monthly["own_channel_active"] == 1]["units"].mean()
+        suspended = monthly[monthly["own_channel_active"] == 0]["units"].mean()
 
         if active == 0:
             return 0.0
 
         return float((suspended - active) / active)
 
+    def _status_impact_normalized(self):
+        df = self.df.copy()
+        df["quarter"] = df["month"].dt.quarter
+
+        monthly = (
+            df.groupby(["month", "own_channel_active", "quarter"], as_index=False)
+            .agg(units=("units", "sum"))
+        )
+
+        by_q = (
+            monthly.groupby(["own_channel_active", "quarter"], as_index=False)
+            .agg(avg_units=("units", "mean"))
+        )
+
+        active = by_q[by_q["own_channel_active"] == 1]["avg_units"].mean()
+        suspended = by_q[by_q["own_channel_active"] == 0]["avg_units"].mean()
+
+        if active == 0:
+            return 0.0
+
+        return float((suspended - active) / active)
+
+    def activity_split(self, df_own_activity):
+        df = df_own_activity.copy()
+
+        counts = df["own_channel_active"].value_counts().to_dict()
+
+        return {
+            "active_months": int(counts.get(1, 0)),
+            "suspended_months": int(counts.get(0, 0)),
+            "total_months": int(len(df))
+        }
+
+    def raw_averages(self):
+        df = self.df.copy()
+
+        monthly = (
+            df.groupby(["month", "own_channel_active"], as_index=False)
+            .agg(units=("units", "sum"))
+        )
+
+        return (
+            monthly.groupby("own_channel_active")["units"]
+            .mean()
+            .to_dict()
+        )
+
+# AGGREGATIONS
 class AggregationAnalyzer(BaseAnalyzer):
 
     def by_product(self):
@@ -89,12 +147,19 @@ class AggregationAnalyzer(BaseAnalyzer):
         df = self.df.copy()
         df["quarter"] = df["month"].dt.quarter
 
+        monthly = (
+            df.groupby(["month", "own_channel_active", "quarter"], as_index=False)
+            .agg(units=("units", "sum"))
+        )
+
         return (
-            df.groupby(["own_channel_active", "quarter"], as_index=False)
+            monthly.groupby(["own_channel_active", "quarter"], as_index=False)
             .agg(avg_units=("units", "mean"))
             .sort_values(["quarter", "own_channel_active"])
         )
-    
+
+
+# CANNIBALIZATION / EFFECT ANALYSIS
 class CannibalizationAnalyzer(BaseAnalyzer):
 
     def sales_by_channel_status(self):
@@ -113,3 +178,12 @@ class CannibalizationAnalyzer(BaseAnalyzer):
             "suspended_avg": float(suspended.mean()),
             "difference": float(suspended.mean() - active.mean())
         }
+
+    def sales_when_active_only(self):
+        df = self.df[self.df["own_channel_active"] == 1]
+
+        return (
+            df.groupby("book", as_index=False)
+            .agg(avg_units=("units", "mean"))
+            .sort_values("avg_units", ascending=False)
+        )

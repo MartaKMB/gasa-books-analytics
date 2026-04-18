@@ -10,12 +10,7 @@ class Cleaner:
 
     def _standarize_columns(self, df):
         df = df.copy()
-        new_cols = []
-        for column in df.columns:
-            clean_name = column.strip().lower()
-            new_cols.append(clean_name)
-        
-        df.columns = new_cols
+        df.columns = [c.strip().lower() for c in df.columns]
         return df
     
     def clean_sales(self, df_sales):
@@ -28,9 +23,7 @@ class Cleaner:
         df = df[df["units"] >= 0]
         df = df[df["month"].notna()]
 
-        df = df.reset_index(drop=True)
-
-        return df
+        return df.reset_index(drop=True)
 
     def clean_jdg(self, df_jdg):
         df = self._standarize_columns(df_jdg)
@@ -39,7 +32,7 @@ class Cleaner:
 
         df["own_channel_active"] = (
             df["jdg"]
-            .fillna("active") # NaN = active
+            .fillna("active")
             .str.lower()
             .str.strip()
             .map({
@@ -52,14 +45,20 @@ class Cleaner:
             unknown = df[df["own_channel_active"].isna()]["jdg"].unique()
             raise ValueError(f"Unknown JDG values: {unknown}")
 
-        df = df[["month", "own_channel_active"]]
+        df["is_active"] = df["own_channel_active"] == 1
 
-        return df
-    
+        return df[["month", "own_channel_active", "is_active"]]
+
     def enrich_sales_with_own_activity(self, df_sales, df_own_activity):
-        merged = df_sales.merge(
-            df_own_activity[["month", "own_channel_active"]],
+        merged = df_own_activity.merge(
+            df_sales,
             on="month",
             how="left"
         )
+
+        merged["units"] = merged["units"].fillna(0)
+
+        merged["own_channel_active"] = merged["own_channel_active"].fillna(1)
+        merged["is_active"] = merged["is_active"].fillna(True)
+
         return merged

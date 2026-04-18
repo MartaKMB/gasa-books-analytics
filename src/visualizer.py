@@ -30,11 +30,12 @@ def plot_kpis(ax, kpis: dict):
         family="Monospace"
     )
 
-
 def plot_top_products(ax, df, n_top):
     top = df.nlargest(n_top, "total_units")
-    ax.bar(top["title"], top["total_units"])
+
+    ax.bar(top["book"], top["total_units"])
     ax.set_title("Top products")
+    ax.set_ylabel("units")
 
 
 def plot_region(ax, df):

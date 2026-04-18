@@ -1,5 +1,5 @@
 import pandas as pd
-
+from config.products import ASIN_TO_BOOK
 
 class AggregationAnalyzer:
 
@@ -7,8 +7,15 @@ class AggregationAnalyzer:
         self.df = df.copy()
 
     def by_product(self):
+        df = self.df.copy()
+
+        df["book"] = df["asin"].map(ASIN_TO_BOOK)
+
+        # fallback jeśli coś nie ma mapowania
+        df["book"] = df["book"].fillna("unknown")
+
         return (
-            self.df.groupby("title", as_index=False)
+            df.groupby("book", as_index=False)
             .agg(total_units=("units", "sum"))
             .sort_values("total_units", ascending=False)
         )
@@ -111,7 +118,8 @@ class KPIAnalyzer:
         # =========================
         # PRODUCTS / REGIONS
         # =========================
-        distinct_products = int(self.df_detailed["title"].nunique())
+        books = self.df_detailed["asin"].map(ASIN_TO_BOOK)
+        distinct_products = int(books.nunique())
 
         regions = (
             self.df_detailed["marketplace"]

@@ -52,22 +52,14 @@ class KPIAnalyzer(BaseAnalyzer):
             "total_units": int(self.df["units"].sum()),
             "distinct_products": int(self.df["asin"].nunique()),
             "distinct_regions": int(self.df["region"].nunique()),
-
-            # FIX: real KPI from cannibalization
             "cannibalization_impact": cannibal["insight"],
-
             "channel_substitution_effect": self._status_impact(),
             "channel_substitution_effect_normalized": self._status_impact_normalized(),
-
-            # FIXED coverage (no duplicates)
             "amazon_active_months": self._amazon_active_months(),
             "amazon_coverage": self._amazon_coverage(),
-
-            **activity_stats
         }
 
     def activity_split_from_df(self):
-        # FIX: derive from DF, not external DF
         df = self.df.drop_duplicates("month")
 
         return {
@@ -159,26 +151,21 @@ class AggregationAnalyzer(BaseAnalyzer):
         return self._amazon_monthly().sort_values("month")
     
     def _amazon_monthly(self):
-            # FIX: remove JDG effect + duplicates
         return (
             self.df.groupby("month", as_index=False)
                 .agg(total_units=("units", "sum"))
             )
 
     def seasonality(self):
-            """
-            FIX: pure Amazon seasonality (NO JDG influence)
-            """
+        df = self._amazon_monthly()
 
-            df = self._amazon_monthly()
+        df["quarter"] = df["month"].dt.quarter
 
-            df["quarter"] = df["month"].dt.quarter
-
-            return (
-                df.groupby("quarter", as_index=False)
+        return (
+            df.groupby("quarter", as_index=False)
                 .agg(avg_units=("total_units", "mean"))
                 .sort_values("quarter")
-            )
+        )
 
 
 # CANNIBALIZATION / EFFECT ANALYSIS
@@ -226,12 +213,9 @@ class CannibalizationAnalyzer(BaseAnalyzer):
         return {
             "active_avg": float(active),
             "suspended_avg": float(suspended),
-
-            # 🔥 NEW: business-friendly metrics
             "ratio": float(ratio),
             "impact_index": float(ratio * 100),
 
-            # 🔥 NEW: interpretation layer
             "insight": (
                 "No JDG impact on Amazon sales"
                 if ratio >= 1 else

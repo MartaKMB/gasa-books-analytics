@@ -2,6 +2,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
 
+plt.style.use("seaborn-v0_8-whitegrid")
 
 def plot_kpis(ax, kpis: dict):
     ax.axis("off")
@@ -29,7 +30,14 @@ def plot_kpis(ax, kpis: dict):
         va="top",
         ha="left",
         fontsize=10,
-        family="Monospace"
+        family="Monospace",
+        color="white",
+        bbox=dict(
+            boxstyle="round,pad=1.0",
+            facecolor="#1F77B4",
+            edgecolor="#FF871E",
+            linewidth=1.2
+        )
     )
 
 def plot_top_products(ax, df, n_top):
@@ -102,7 +110,7 @@ def save_dashboard(
     plot_channel_bar(axs[1, 2], df_own_impact)
 
     fig.suptitle("BOOKS SALES ON AMAZON", fontsize=14, y=0.98, fontweight="bold")
-    plt.tight_layout()
+    plt.tight_layout(pad=3.0)
     plt.subplots_adjust(top=0.92)
 
     os.makedirs(out_dir, exist_ok=True)

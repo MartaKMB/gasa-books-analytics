@@ -1,5 +1,6 @@
 import os
 import matplotlib.pyplot as plt
+from matplotlib.ticker import PercentFormatter
 
 
 def plot_kpis(ax, kpis: dict):
@@ -7,18 +8,32 @@ def plot_kpis(ax, kpis: dict):
 
     kpi_lines = [
         "KEY METRICS",
+
         "-----------",
+
+        # 🔹 SALES
         f"Total units: {kpis.get('total_units', 0):,}",
         f"Products: {kpis.get('distinct_products', 0)}",
         f"Regions: {kpis.get('distinct_regions', 0)}",
+
         "-----------",
+
+        # 🔹 DATA COVERAGE (🔥 NOWE!)
+        f"JDG total months: {kpis.get('jdg_total_months', 0)}",
+        f"Amazon total months: {kpis.get('amazon_observed_months', 0)}",
+        f"Overlap (used in analysis): {kpis.get('overlap_months', 0)}",
+
+        "-----------",
+
+        # 🔹 SPLIT
         f"JDG active months: {kpis.get('active_months', 0)}",
         f"JDG suspended months: {kpis.get('suspended_months', 0)}",
-        f"Amazon active months: {kpis.get('amazon_active_months', 0)}",
-        f"Amazon coverage: {kpis.get('amazon_coverage', 0):.2%}",
-        "-----------",
-        f"Cannibalization impact: {kpis.get('cannibalization_pct'):.2%}",
-        f"({kpis.get('cannibalization_impact')})"
+
+  
+
+        # 🔹 RESULT
+        f"Impact: {kpis.get('cannibalization_pct', 0):.2%}",
+        f"({kpis.get('cannibalization_impact', '')})"
     ]
 
     ax.text(
@@ -40,7 +55,7 @@ def plot_top_products(ax, df, n_top):
 
 def plot_region(ax, df):
     ax.bar(df["region"], df["total_units"])
-    ax.set_title("Region")
+    ax.set_title("Top regions")
     ax.set_ylabel("units")
 
 
@@ -65,7 +80,7 @@ def plot_seasonality(ax, df):
     ax.set_ylabel("share (%)")
     ax.set_xlabel("quarters")
 
-    ax.set_yticklabels([f"{y:.0%}" for y in ax.get_yticks()])
+    ax.yaxis.set_major_formatter(PercentFormatter(1.0))
 
 
 def plot_channel_bar(ax, df):
@@ -92,7 +107,7 @@ def save_dashboard(
     out_dir,
     filename
 ):
-    fig, axs = plt.subplots(2, 3, figsize=(12, 6))
+    fig, axs = plt.subplots(2, 3, figsize=(12,7))
 
     plot_kpis(axs[0, 0], kpis)
     plot_top_products(axs[0, 1], df_by_product, n_top)
@@ -102,12 +117,14 @@ def save_dashboard(
     plot_seasonality(axs[1, 1], df_seasonality)
     plot_channel_bar(axs[1, 2], df_own_impact)
 
+    fig.suptitle("BOOKS SALES ON AMAZON", fontsize=14, y=0.98, fontweight="bold")
     plt.tight_layout()
+    plt.subplots_adjust(top=0.92)
 
     os.makedirs(out_dir, exist_ok=True)
     path = os.path.join(out_dir, filename)
 
-    plt.savefig(path)
+    plt.savefig(path, dpi=150)
     plt.close()
 
     return path

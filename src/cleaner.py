@@ -35,31 +35,34 @@ class Cleaner:
         return df[["month", "own_channel_active", "is_active"]]
 
     def enrich_sales_with_own_activity(self, df_sales, df_jdg):
-        """
-        🔥 CRITICAL FIX:
-        1. Build full timeline using JDG (no missing months)
-        2. Fill missing Amazon sales with 0
-        3. Filter to period where Amazon actually exists
-        """
-
-        # monthly Amazon aggregation
         monthly = (
             df_sales.groupby("month", as_index=False)
             .agg(units=("units", "sum"))
         )
 
-        # 🔧 FIX: build FULL timeline from JDG
         merged = df_jdg.merge(monthly, on="month", how="left")
 
-        # 🔧 FIX: missing Amazon sales = 0 (NOT missing!)
         merged["units"] = merged["units"].fillna(0)
-
-        # 🔧 FIX: forward fill JDG status
         merged["own_channel_active"] = merged["own_channel_active"].ffill().fillna(1)
 
-        # 🔥 FIX: restrict analysis to Amazon period only
+        # 🔥 META: full JDG timeline
+        total_jdg_months = len(df_jdg)
+
+        # 🔥 META: Amazon start
         first_amazon_month = monthly["month"].min()
+
+        # 🔥 FILTER: analysis scope
         merged = merged[merged["month"] >= first_amazon_month]
+
+        # 🔥 META: overlap
+        overlap_months = len(merged)
+
+        # 🔥 attach metadata
+        merged.attrs["meta"] = {
+            "jdg_total_months": total_jdg_months,
+            "amazon_start_month": first_amazon_month,
+            "overlap_months": overlap_months
+        }
 
         return merged.reset_index(drop=True)
 

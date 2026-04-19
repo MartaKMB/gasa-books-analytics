@@ -161,16 +161,18 @@ class KPIAnalyzer:
 
         monthly = self.df_ts.copy()
 
+        # 🔥 META from cleaner
+        meta = self.df_ts.attrs.get("meta", {})
+
+        jdg_total_months = meta.get("jdg_total_months", len(monthly))
+        overlap_months = meta.get("overlap_months", len(monthly))
+
+        # 🔹 analysis scope
         active_months = int((monthly["own_channel_active"] == 1).sum())
         suspended_months = int((monthly["own_channel_active"] == 0).sum())
 
-        amazon_active_months = int((monthly["units"] > 0).sum())
-        total_months = len(monthly)
-
-        amazon_coverage = (
-            amazon_active_months / total_months
-            if total_months > 0 else 0
-        )
+        # 🔹 Amazon presence (not sales!)
+        amazon_months = len(monthly)
 
         grouped = monthly.groupby("own_channel_active")["units"].mean()
 
@@ -183,7 +185,6 @@ class KPIAnalyzer:
         else:
             cannibalization_pct = (suspended_avg - active_avg) / active_avg
 
-            # 🔧 FIX: softer, non-causal interpretation
             if abs(cannibalization_pct) < 0.10:
                 label = "No clear difference"
             elif cannibalization_pct < 0:
@@ -195,10 +196,17 @@ class KPIAnalyzer:
             "total_units": total_units,
             "distinct_products": distinct_products,
             "distinct_regions": distinct_regions,
+
+            # 🔥 DATA CONTEXT
+            "jdg_total_months": jdg_total_months,
+            "amazon_observed_months": amazon_months,
+            "overlap_months": overlap_months,
+
+            # 🔥 ANALYSIS SPLIT
             "active_months": active_months,
             "suspended_months": suspended_months,
-            "amazon_active_months": amazon_active_months,
-            "amazon_coverage": amazon_coverage,
+
+            # 🔥 RESULT
             "cannibalization_impact": label,
             "cannibalization_pct": cannibalization_pct
         }

@@ -1,18 +1,14 @@
-# 📊 GaSa Books Sales Analysis
+# 🚀 GaSa Books Sales Analysis
 
-Analysis of Amazon book sales based on exported marketplace data, enriched with own-channel activity to investigate **sales cannibalization** and **seasonality patterns**.
+End-to-end data analysis project exploring Amazon book sales and their relationship with an independent sales channel (JDG).
 
 ---
 
-## 🚀 Project Overview
+## 🧠 Business Context
 
-This project analyzes book sales from Amazon and compares them with activity from an independent sales channel.
+This project investigates whether operating an independent sales channel impacts Amazon sales performance.
 
-### Goals:
-- 📈 Understand sales distribution across products and regions  
-- 🔍 Detect potential **cannibalization effects** between Amazon and own sales channel  
-- 🕒 Analyze **seasonality trends** (monthly & quarterly)  
-- 📊 Build a compact visual dashboard summarizing key insights  
+The key analytical challenge is to ensure **fair comparison across time**, avoiding bias caused by missing data or misaligned timelines.
 
 ---
 
@@ -21,20 +17,19 @@ This project analyzes book sales from Amazon and compares them with activity fro
 
 ---
 
-## 🧠 Key Questions
+## 🎯 Key Questions
 
-- Does running my own sales channel reduce Amazon sales?
-- Which products sell best?
-- Which regions generate the most sales?
-- Are there seasonal patterns in sales?
-
+- Which books generate the highest sales?
+- Which marketplaces drive the most sales?
+- How do sales evolve over time?
+- Are there seasonal patterns in sales (quarterly)?
+- Is there any observable relationship between Amazon sales and own-channel activity?
 
 ---
 
 ## 📦 Data Sources
 
 ### 1. Amazon Sales (`amazon_sales.csv`)
-
 Columns:
 - `Date`
 - `Title`
@@ -43,42 +38,71 @@ Columns:
 - `Units`
 
 ### 2. Own Channel Activity (`own_channel_activity.csv`)
-
 Columns:
-- `Miesiac` (Month)
-- `JDG` (activity flag)
+- `Miesiac` (month)
+- `JDG` (activity status: `active` / `zawieszona`)
 
 ---
 
 ## ⚙️ Data Pipeline
-Loader → Cleaner → Analyzer → Visualizer
+
+**Loader → Cleaner → Analyzer → Visualizer**
+
+---
 
 ### 1. Loader
-
 - Loads CSV files
 - Validates schema
-- Handles file errors
+- Handles missing files
+
+---
 
 ### 2. Cleaner
 
+Responsible for data preparation and **timeline alignment**.
+
+Key steps:
 - Standardizes column names
-- Converts data types
-- Handles missing values
-- Merges Amazon sales with own-channel activity
+- Converts dates and numeric values
+- Builds a **complete monthly timeline using JDG data**
+- Fills missing Amazon sales with `0` (prevents survivorship bias)
+- Filters dataset to **period where Amazon sales exist**
+- Merges Amazon and JDG datasets
+
+💡 This ensures:
+- no missing months
+- fair comparison between active vs suspended periods
+- consistent time granularity
+
+---
 
 ### 3. Analyzer
 
-Responsible for business logic:
-- KPI calculations
-- Aggregations:
-  - by product
-  - by region
-  - by month
-- Cannibalization analysis (Amazon vs own channel)
-- Seasonality analysis (quarter-based)
+Implements business logic and analytical methods.
+
+#### 📊 Aggregations
+- Sales by product
+- Sales by region
+- Monthly sales trend
+
+#### 📈 Seasonality
+- Quarterly aggregation
+- Uses **share of annual sales** (not raw units)
+- Allows comparison across years independent of growth
+
+#### 🔍 Cannibalization Analysis
+- Comparison of average sales:
+  - JDG active vs suspended
+- Rolling trend (3-month smoothing)
+- Event-based analysis:
+  - detects **actual transition** (active → suspended)
+
+⚠️ Important:  
+This analysis identifies **correlations, not causal relationships**.
+
+---
 
 ### 4. Visualizer
-
 - Generates a single dashboard (`.png`)
 - Combines all insights into one view
 
@@ -86,73 +110,93 @@ Responsible for business logic:
 
 ## 📊 Output
 
-The pipeline generates a dashboard:
+Dashboard saved to:
 reports/figures/dashboard.png
 
-Dashboard includes:
+
+Includes:
 - Key metrics
 - Top-selling products
-- Sales by region
-- Monthly trend
-- Quarterly seasonality
-- Amazon vs own-channel comparison
+- Regional distribution
+- Monthly trend with rolling average
+- Seasonality (quarter share of annual sales)
+- Amazon vs JDG comparison
 
 ---
 
-## 📈 Example Insights
+## 📈 Key Insights
 
-- One product dominates total sales
-- Majority of sales comes from a single region
-- Sales fluctuate monthly with visible peaks
-- Initial analysis suggested higher Amazon sales when the own channel was inactive. However, after  correcting for missing time periods and controlling for seasonality, this effect was no longer consistent.
-This indicates that the observed differences are likely driven by external factors (e.g. seasonality or growth trends) rather than direct cannibalization between channels.
+- Sales are concentrated in a small number of products
+- A single region dominates total volume
+- Sales fluctuate over time with visible trends
+- No consistent evidence of cannibalization:
+  - differences between JDG active and suspended periods are not stable
+  - observed effects may be influenced by trend or seasonality
 
 ---
 
-## ⚠️ Analytical Caveats
+## ⚠️ Data Scope & Analytical Considerations
 
-During development, a key issue was identified:
+### Timeline Alignment
+- JDG data covers a longer period than Amazon
+- Analysis is restricted to **overlapping months only**
 
-- Early analysis excluded months with no Amazon sales
-- This introduced **survivorship bias**, significantly distorting results
+### Bias Prevention
+- Months with no Amazon sales are included as `0`
+- Prevents survivorship bias
 
-To address this:
-- A full monthly timeline was reconstructed using own-channel activity data
-- Missing sales were treated as zero (not missing)
+### Interpretation Limits
+- Analysis is based on aggregated monthly data
+- External factors are not controlled:
+  - pricing
+  - marketing
+  - promotions
+  - external demand
 
-Additionally:
-- A normalized KPI was introduced to control for seasonality
+👉 Therefore:  
+**Results should be interpreted as descriptive, not causal**
 
-This highlights the importance of:
-- validating assumptions behind the data  
-- distinguishing correlation from causation  
+---
+
+## 📊 Key Metrics Explained
+
+The dashboard includes three groups of metrics:
+
+### 🔹 Data Coverage
+- **JDG total months** – full timeline of own-channel activity
+- **Amazon observed months** – months where Amazon exists
+- **Overlap (used in analysis)** – months included in comparison
+
+### 🔹 Analysis Split
+- JDG active months (within overlap)
+- JDG suspended months (within overlap)
+
+### 🔹 Results
+- Relative difference in sales between periods
+- Interpreted cautiously (non-causal)
 
 ---
 
 ## 🛠️ How to Run
 
-### 1. Install dependencies
+```bash
 pip install -r requirements.txt
-
-### 2. Run pipeline
 python main.py
-
-### 3. Check output
-reports/figures/dashboard.png
-
----
+```
 
 ## 💡 Design Decisions
 
 - Clear separation of concerns (Loader / Cleaner / Analyzer / Visualizer)
 - Defensive programming (schema validation, error handling)
-- Simple and readable Pandas transformations
+- Bias-aware analysis (timeline reconstruction)
+- Explicit handling of missing data (zero vs null)
 - Reproducible pipeline
 
 ---
 
 ## 🔮 Possible Improvements
 
+- Regression model (control for trend & seasonality)
 - Add unit tests (pytest)
 - Export results to CSV / JSON
 - Replace static plots with interactive dashboard (Plotly / Streamlit)
@@ -161,6 +205,8 @@ reports/figures/dashboard.png
 
 ## 👩‍💻 Author
 
-Marta Mucha-Balcerek
+Project created as part of a data analytics portfolio, focusing on real-world analytical challenges such as:
 
-Project created as part of portfolio and real-world sales analysis.
+- data bias
+- time-series alignment
+- interpretation of observational data

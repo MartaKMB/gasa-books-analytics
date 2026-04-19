@@ -1,6 +1,7 @@
 import pandas as pd
 from config.products import ASIN_TO_BOOK
 
+
 class AggregationAnalyzer:
 
     def __init__(self, df):
@@ -37,24 +38,28 @@ class AggregationAnalyzer:
         )
 
     def seasonality(self):
+        """
+        🔥 IMPROVED:
+        Uses share of yearly sales instead of raw averages.
+        This makes quarters comparable across years.
+        """
+
         df = self.by_month()
 
         df["year"] = df["month"].dt.year
         df["quarter"] = df["month"].dt.quarter
 
-        yearly_avg = df.groupby("year")["units"].sum().mean()
+        # 🔧 FIX: yearly total per year
+        df["year_total"] = df.groupby("year")["units"].transform("sum")
 
-        q = (
-            df.groupby(["year", "quarter"], as_index=False)
-            .agg(units=("units", "sum"))
-        )
+        # 🔧 FIX: share of each month in its year
+        df["share"] = df["units"] / df["year_total"]
 
+        # 🔧 aggregate to quarter level
         result = (
-            q.groupby("quarter", as_index=False)
-            .agg(avg_units=("units", "mean"))
+            df.groupby("quarter", as_index=False)
+            .agg(avg_share=("share", "mean"))
         )
-
-        result["share_of_year"] = result["avg_units"] / yearly_avg
 
         return result
 
@@ -66,12 +71,18 @@ class CannibalizationAnalyzer:
 
     def rolling_trend(self, window=3):
         df = self.df.copy()
-        df["rolling_units"] = df["units"].rolling(window).mean()
+
+        # 🔧 FIX: avoid NaNs at start
+        df["rolling_units"] = df["units"].rolling(window, min_periods=1).mean()
+
         return df
 
     def jdg_time_series(self):
         df = self.df.copy()
-        df["rolling_3m"] = df["units"].rolling(3).mean()
+
+        # 🔧 FIX: consistent rolling
+        df["rolling_3m"] = df["units"].rolling(3, min_periods=1).mean()
+
         return df
 
     def impact_summary(self):
@@ -84,13 +95,45 @@ class CannibalizationAnalyzer:
             "suspended_avg": float(stats.get(0, 0))
         }
 
-    def event_analysis(self, event_month, window=6):
+    def detect_event_month(self):
+        """
+        🔥 NEW:
+        Detect REAL transition from active → suspended
+        """
+
         df = self.df.copy()
+        df["prev"] = df["own_channel_active"].shift(1)
+
+        events = df[
+            (df["own_channel_active"] == 0) &
+            (df["prev"] == 1)
+        ]
+
+        if events.empty:
+            return None
+
+        return events["month"].iloc[0]
+
+    def event_analysis(self, window=6):
+        """
+        🔥 IMPROVED:
+        Uses detected event instead of arbitrary month
+        """
+
+        df = self.df.copy()
+
+        event_month = self.detect_event_month()
+
+        if event_month is None:
+            return {
+                "error": "No valid JDG suspension event detected"
+            }
 
         before = df[df["month"] < event_month].tail(window)
         after = df[df["month"] >= event_month].head(window)
 
         return {
+            "event_month": event_month,
             "before_avg": before["units"].mean(),
             "after_avg": after["units"].mean(),
             "delta": after["units"].mean() - before["units"].mean()
@@ -136,16 +179,17 @@ class KPIAnalyzer:
 
         if active_avg == 0:
             cannibalization_pct = 0
-            cannibalization_label = "Insufficient data"
+            label = "Insufficient data"
         else:
             cannibalization_pct = (suspended_avg - active_avg) / active_avg
 
+            # 🔧 FIX: softer, non-causal interpretation
             if abs(cannibalization_pct) < 0.10:
-                cannibalization_label = "No significant impact"
+                label = "No clear difference"
             elif cannibalization_pct < 0:
-                cannibalization_label = "Sales drop when JDG suspended"
+                label = "Lower Amazon sales observed\nduring JDG suspension (not causal)"
             else:
-                cannibalization_label = "Sales increase when JDG suspended"
+                label = "Higher Amazon sales observed\nduring JDG suspension (not causal)"
 
         return {
             "total_units": total_units,
@@ -155,6 +199,6 @@ class KPIAnalyzer:
             "suspended_months": suspended_months,
             "amazon_active_months": amazon_active_months,
             "amazon_coverage": amazon_coverage,
-            "cannibalization_impact": cannibalization_label,
+            "cannibalization_impact": label,
             "cannibalization_pct": cannibalization_pct
         }

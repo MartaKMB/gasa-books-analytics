@@ -44,10 +44,7 @@ rolling_trend = cannibal_analyzer.rolling_trend()
 jdg_timeseries = cannibal_analyzer.jdg_time_series()
 
 impact = cannibal_analyzer.impact_summary()
-event_result = cannibal_analyzer.event_analysis(
-    event_month=jdg[jdg["own_channel_active"] == 0]["month"].min(),
-    window=6
-)
+event_result = cannibal_analyzer.event_analysis()
 
 # 4. VISUALIZATION
 os.makedirs("reports/figures", exist_ok=True)

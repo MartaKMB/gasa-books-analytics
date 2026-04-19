@@ -17,7 +17,7 @@ def plot_kpis(ax, kpis: dict):
         f"Amazon active months: {kpis.get('amazon_active_months', 0)}",
         f"Amazon coverage: {kpis.get('amazon_coverage', 0):.2%}",
         "-----------",
-        f"Cannibalization impact: {kpis.get("cannibalization_pct"):.2%} ",
+        f"Cannibalization impact: {kpis.get('cannibalization_pct'):.2%}",
         f"({kpis.get('cannibalization_impact')})"
     ]
 
@@ -58,10 +58,14 @@ def plot_monthly(ax, df):
 
 
 def plot_seasonality(ax, df):
-    ax.bar(df["quarter"], df["avg_units"])
-    ax.set_title("Seasonality")
-    ax.set_ylabel("units")
+    ax.bar(df["quarter"], df["avg_share"])
+
+    # 🔧 pokazujemy % zamiast ułamków
+    ax.set_title("Seasonality (quarter share of annual sales)")
+    ax.set_ylabel("share (%)")
     ax.set_xlabel("quarters")
+
+    ax.set_yticklabels([f"{y:.0%}" for y in ax.get_yticks()])
 
 
 def plot_channel_bar(ax, df):

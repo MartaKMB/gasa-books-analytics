@@ -1,3 +1,0 @@
-MARKETPLACE_TO_REGION = {
-    "COM": "US"
-}

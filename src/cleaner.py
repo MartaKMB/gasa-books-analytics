@@ -45,19 +45,11 @@ class Cleaner:
         merged["units"] = merged["units"].fillna(0)
         merged["own_channel_active"] = merged["own_channel_active"].ffill().fillna(1)
 
-        # 🔥 META: full JDG timeline
         total_jdg_months = len(df_jdg)
-
-        # 🔥 META: Amazon start
         first_amazon_month = monthly["month"].min()
-
-        # 🔥 FILTER: analysis scope
         merged = merged[merged["month"] >= first_amazon_month]
-
-        # 🔥 META: overlap
         overlap_months = len(merged)
 
-        # 🔥 attach metadata
         merged.attrs["meta"] = {
             "jdg_total_months": total_jdg_months,
             "amazon_start_month": first_amazon_month,
@@ -67,15 +59,10 @@ class Cleaner:
         return merged.reset_index(drop=True)
 
     def enrich_sales_with_own_activity_raw(self, df_sales, df_jdg):
-        """
-        Raw (detailed) merge — still filtered to Amazon period for consistency
-        """
-
         merged = df_sales.merge(df_jdg, on="month", how="left")
 
         merged["own_channel_active"] = merged["own_channel_active"].ffill().fillna(1)
 
-        # 🔧 FIX: keep only months where Amazon exists
         first_amazon_month = df_sales["month"].min()
         merged = merged[merged["month"] >= first_amazon_month]
 

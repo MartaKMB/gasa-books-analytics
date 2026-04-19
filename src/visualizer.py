@@ -8,30 +8,17 @@ def plot_kpis(ax, kpis: dict):
 
     kpi_lines = [
         "KEY METRICS",
-
         "-----------",
-
-        # 🔹 SALES
         f"Total units: {kpis.get('total_units', 0):,}",
         f"Products: {kpis.get('distinct_products', 0)}",
         f"Regions: {kpis.get('distinct_regions', 0)}",
-
         "-----------",
-
-        # 🔹 DATA COVERAGE (🔥 NOWE!)
         f"JDG total months: {kpis.get('jdg_total_months', 0)}",
         f"Amazon total months: {kpis.get('amazon_observed_months', 0)}",
         f"Overlap (used in analysis): {kpis.get('overlap_months', 0)}",
-
         "-----------",
-
-        # 🔹 SPLIT
         f"JDG active months: {kpis.get('active_months', 0)}",
         f"JDG suspended months: {kpis.get('suspended_months', 0)}",
-
-  
-
-        # 🔹 RESULT
         f"Impact: {kpis.get('cannibalization_pct', 0):.2%}",
         f"({kpis.get('cannibalization_impact', '')})"
     ]
@@ -75,13 +62,11 @@ def plot_monthly(ax, df):
 def plot_seasonality(ax, df):
     ax.bar(df["quarter"], df["avg_share"])
 
-    # 🔧 pokazujemy % zamiast ułamków
     ax.set_title("Seasonality (quarter share of annual sales)")
     ax.set_ylabel("share (%)")
     ax.set_xlabel("quarters")
 
     ax.yaxis.set_major_formatter(PercentFormatter(1.0))
-
 
 def plot_channel_bar(ax, df):
     grouped = df.groupby("own_channel_active")["units"].mean()
@@ -94,7 +79,6 @@ def plot_channel_bar(ax, df):
     ax.set_title("Amazon avg sales vs JDG status")
     ax.set_ylabel("units")
     ax.set_xlabel("JDG activity")
-
 
 def save_dashboard(
     df_by_product,

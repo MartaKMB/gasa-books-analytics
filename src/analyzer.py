@@ -38,24 +38,14 @@ class AggregationAnalyzer:
         )
 
     def seasonality(self):
-        """
-        🔥 IMPROVED:
-        Uses share of yearly sales instead of raw averages.
-        This makes quarters comparable across years.
-        """
-
         df = self.by_month()
 
         df["year"] = df["month"].dt.year
         df["quarter"] = df["month"].dt.quarter
 
-        # 🔧 FIX: yearly total per year
         df["year_total"] = df.groupby("year")["units"].transform("sum")
-
-        # 🔧 FIX: share of each month in its year
         df["share"] = df["units"] / df["year_total"]
 
-        # 🔧 aggregate to quarter level
         result = (
             df.groupby("quarter", as_index=False)
             .agg(avg_share=("share", "mean"))
@@ -72,7 +62,6 @@ class CannibalizationAnalyzer:
     def rolling_trend(self, window=3):
         df = self.df.copy()
 
-        # 🔧 FIX: avoid NaNs at start
         df["rolling_units"] = df["units"].rolling(window, min_periods=1).mean()
 
         return df
@@ -80,7 +69,6 @@ class CannibalizationAnalyzer:
     def jdg_time_series(self):
         df = self.df.copy()
 
-        # 🔧 FIX: consistent rolling
         df["rolling_3m"] = df["units"].rolling(3, min_periods=1).mean()
 
         return df
@@ -96,11 +84,6 @@ class CannibalizationAnalyzer:
         }
 
     def detect_event_month(self):
-        """
-        🔥 NEW:
-        Detect REAL transition from active → suspended
-        """
-
         df = self.df.copy()
         df["prev"] = df["own_channel_active"].shift(1)
 
@@ -115,11 +98,6 @@ class CannibalizationAnalyzer:
         return events["month"].iloc[0]
 
     def event_analysis(self, window=6):
-        """
-        🔥 IMPROVED:
-        Uses detected event instead of arbitrary month
-        """
-
         df = self.df.copy()
 
         event_month = self.detect_event_month()
@@ -161,17 +139,14 @@ class KPIAnalyzer:
 
         monthly = self.df_ts.copy()
 
-        # 🔥 META from cleaner
         meta = self.df_ts.attrs.get("meta", {})
 
         jdg_total_months = meta.get("jdg_total_months", len(monthly))
         overlap_months = meta.get("overlap_months", len(monthly))
 
-        # 🔹 analysis scope
         active_months = int((monthly["own_channel_active"] == 1).sum())
         suspended_months = int((monthly["own_channel_active"] == 0).sum())
 
-        # 🔹 Amazon presence (not sales!)
         amazon_months = len(monthly)
 
         grouped = monthly.groupby("own_channel_active")["units"].mean()
@@ -196,17 +171,14 @@ class KPIAnalyzer:
             "total_units": total_units,
             "distinct_products": distinct_products,
             "distinct_regions": distinct_regions,
-
-            # 🔥 DATA CONTEXT
+            # DATA CONTEXT
             "jdg_total_months": jdg_total_months,
             "amazon_observed_months": amazon_months,
             "overlap_months": overlap_months,
-
-            # 🔥 ANALYSIS SPLIT
+            # ANALYSIS SPLIT
             "active_months": active_months,
             "suspended_months": suspended_months,
-
-            # 🔥 RESULT
+            # RESULT
             "cannibalization_impact": label,
             "cannibalization_pct": cannibalization_pct
         }

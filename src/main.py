@@ -44,7 +44,6 @@ rolling_trend = cannibal_analyzer.rolling_trend()
 jdg_timeseries = cannibal_analyzer.jdg_time_series()
 
 impact = cannibal_analyzer.impact_summary()
-event_result = cannibal_analyzer.event_analysis()
 
 # 4. VISUALIZATION
 os.makedirs("reports/figures", exist_ok=True)
@@ -64,8 +63,5 @@ out = viz.save_dashboard(
 # 5. OUTPUT
 print("\n=== JDG IMPACT ===")
 print(impact)
-
-print("\n=== EVENT ANALYSIS ===")
-print(event_result)
 
 print("\nDashboard saved to:", out)
